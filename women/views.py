@@ -1,8 +1,5 @@
-from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.shortcuts import render, redirect, get_object_or_404
-
-from django.template.loader import render_to_string
-from django.urls import reverse
+from django.http import HttpResponse, HttpResponseNotFound
+from django.shortcuts import render, get_object_or_404
 
 from .models import Women, Category, TagPost
 
@@ -14,18 +11,9 @@ menu = [
     {'title': "Войти", 'url_name': 'login'}
 ]
 
-data_db = [
-    {'id': 1, 'title': 'Анджелина Джоли',
-     'content': 'Биография Анджелины Джоли', 'is_published': True},
-    {'id': 2, 'title': 'Марго Робби', 'content': 'Биография Марго Робби',
-     'is_published': False},
-    {'id': 3, 'title': 'Джулия Робертс', 'content': 'Биография Джулии Робертс',
-     'is_published': True},
-]
-
 
 def index(request):
-    posts = Women.objects.all()
+    posts = Women.objects.all().select_related('cat')
 
     data = {'title': 'Главная страница',
             'menu': menu,
@@ -70,7 +58,7 @@ def login(request):
 
 def show_category(request, cat_slug):
     category = get_object_or_404(Category, slug=cat_slug)
-    posts = Women.objects.filter(cat_id=category.pk)
+    posts = Women.objects.filter(cat_id=category.pk).select_related('cat')
 
     data = {'title': f'Рубрика: {category.name}',
             'menu': menu,
@@ -82,7 +70,11 @@ def show_category(request, cat_slug):
 
 def show_tag_postlist(request, tag_slug):
     tag = get_object_or_404(TagPost, slug=tag_slug)
-    posts = tag.tags.filter(is_published=Women.Status.PUBLISHED)
+    posts = tag.tags.filter(
+        is_published=Women.Status.PUBLISHED
+    ).select_related(
+        'cat'
+    )
 
     data = {
         'title': f"Тег: {tag.tag}",
@@ -91,6 +83,3 @@ def show_tag_postlist(request, tag_slug):
         'cat_selected': None,
     }
     return render(request, 'women/index.html', context=data)
-
-
-
